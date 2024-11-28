@@ -15,12 +15,15 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(
+      const movieResponse = await axios.get(
         `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=it-IT`
       );
-      setMovies(response.data.results);
+      const tvResponse = await axios.get(
+        `https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=it-IT`
+      );
+      setMovies([...movieResponse.data.results, ...tvResponse.data.results]);
     } catch (err) {
-      setError('Errore durante la ricerca del film.');
+      setError('Errore durante la ricerca del film e serie TV.');
     } finally {
       setLoading(false);
     }
@@ -36,11 +39,19 @@ function App() {
     }
   };
 
+  const renderFlag = (languageCode) => {
+    return <img src={`https://flagcdn.com/w20/${languageCode.toLowerCase()}.png`} alt={languageCode} />;
+  };
+
+  const displayImageUrl = (posterPath) => {
+    return posterPath ? `https://image.tmdb.org/t/p/w342/${posterPath}` : 'https://via.placeholder.com/342x500';
+  };
+
   return (
     <div className="App">
       <header>
         <h1>BoolFlix</h1>
-        <p>Cerca i tuoi film preferiti</p>
+        <p>Cerca i tuoi film e serie preferiti</p>
       </header>
 
       <div className="search-container">
@@ -48,23 +59,24 @@ function App() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cerca un film..."
+          placeholder="Cerca un film o una serie..."
           onKeyPress={handleKeyPress}
         />
         <button onClick={handleSearchClick}>Cerca</button>
       </div>
 
       {loading && <p>Caricamento...</p>}
-
       {error && <p>{error}</p>}
 
       <div className="results">
         {movies.map((movie) => (
           <div key={movie.id} className="movie-card">
-            <h3>{movie.title}</h3>
-            <p><strong>Originale:</strong> {movie.original_title}</p>
-            <p><strong>Lingua:</strong> {movie.original_language}</p>
+            <img src={displayImageUrl(movie.poster_path)} alt={movie.title || movie.name} />
+            <h3>{movie.title || movie.name}</h3>
+            <p><strong>Originale:</strong> {movie.original_title || movie.original_name}</p>
+            <p><strong>Lingua:</strong> {renderFlag(movie.original_language)}</p>
             <p><strong>Voto:</strong> {movie.vote_average}</p>
+            <p><strong>Panoramica:</strong> {movie.overview || 'Nessuna panoramica disponibile.'}</p>
           </div>
         ))}
       </div>
